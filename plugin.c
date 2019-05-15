@@ -254,20 +254,30 @@ static void stats_pusher_dogstatsd(struct uwsgi_stats_pusher_instance *uspi, tim
   // we use the same buffer for all of the packets
   struct uwsgi_buffer *ub = uwsgi_buffer_new(uwsgi.page_size);
   struct uwsgi_metric *um = uwsgi.metrics;
+  char * metrics_to_send [] = {"core.idle_workers", "core.busy_workers"}
   while(um) {
-    uwsgi_rlock(uwsgi.metrics_lock);
-    // ignore return value
-    if (um->type == UWSGI_METRIC_GAUGE) {
-      dogstatsd_send_metric(ub, uspi, um->name, um->name_len, *um->value, "|g");
-    }
-    else {
-      dogstatsd_send_metric(ub, uspi, um->name, um->name_len, *um->value, "|c");
-    }
-    uwsgi_rwunlock(uwsgi.metrics_lock);
-    if (um->reset_after_push){
-      uwsgi_wlock(uwsgi.metrics_lock);
-      *um->value = um->initial_value;
-      uwsgi_rwunlock(uwsgi.metrics_lock);
+    // check if the metric is one we want to send
+    unsigned int j = 0;
+    for (j  = 0; j < 2; ++j)
+    {
+      if (strcmp(um->name,  metric_to_send[j]) == 0)
+      {
+        uwsgi_rlock(uwsgi.metrics_lock);
+        // ignore return value
+        if (um->type == UWSGI_METRIC_GAUGE) {
+          dogstatsd_send_metric(ub, uspi, um->name, um->name_len, *um->value, "|g");
+        }
+        else {
+          dogstatsd_send_metric(ub, uspi, um->name, um->name_len, *um->value, "|c");
+        }
+        uwsgi_rwunlock(uwsgi.metrics_lock);
+        if (um->reset_after_push){
+          uwsgi_wlock(uwsgi.metrics_lock);
+          *um->value = um->initial_value;
+          uwsgi_rwunlock(uwsgi.metrics_lock);
+        }
+        break;
+      }
     }
     um = um->next;
   }
