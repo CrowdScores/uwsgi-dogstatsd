@@ -3,6 +3,7 @@
 
 #define MAX_BUFFER_SIZE 8192
 #define MAX_CUSTOM_TAGS 10
+#define NUM_METRICS_TO_SEND 2
 
 /*
 
@@ -254,11 +255,11 @@ static void stats_pusher_dogstatsd(struct uwsgi_stats_pusher_instance *uspi, tim
   // we use the same buffer for all of the packets
   struct uwsgi_buffer *ub = uwsgi_buffer_new(uwsgi.page_size);
   struct uwsgi_metric *um = uwsgi.metrics;
-  char * metrics_to_send [] = {"core.idle_workers", "core.busy_workers"};
+  const char * metrics_to_send [NUM_METRICS_TO_SEND] = {"core.idle_workers", "core.busy_workers"};
   while(um) {
     // check if the metric is one we want to send
     unsigned int j = 0;
-    for (j  = 0; j < 2; ++j)
+    for (j  = 0; j < NUM_METRICS_TO_SEND; ++j)
     {
       if (strcmp(um->name,  metrics_to_send[j]) == 0)
       {
